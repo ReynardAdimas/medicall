@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supaaaa/auth/auth_services.dart';
+import 'package:supaaaa/pendaftaranPasien/pages/pendaftaran_pages.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -21,7 +22,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Profile"),
+        title: const Text("Dashboard Page"),
         actions: [
           // logout button
           IconButton(
@@ -31,9 +32,12 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       body:
-      Center(
-        child: Text("Dashboard Page"),
-      ),
+      ElevatedButton(
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => PendaftaranPages()));
+          },
+          child: const Text("Pendaftaran")
+      )
     );
   }
 }

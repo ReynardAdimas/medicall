@@ -7,6 +7,7 @@ environment:
   sdk: ^3.6.1
 
 dependencies:
+  date_field: ^6.0.3+1
   flutter:
     sdk: flutter
   supabase_flutter: ^2.9.0
@@ -18,3 +19,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/LogoMedicall.png
+    - assets/inventaris-icon.png
+    - assets/jadwal-icon.png
+    - assets/daftar-pasien-icon.png
+
