@@ -3,8 +3,6 @@ import 'package:intl/intl.dart'; // Untuk memformat tanggal
 import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
 import 'package:supaaaa/pendaftaranPasien/kunjungan_database.dart'; // Import KunjunganDatabase
 import 'package:supaaaa/models/kunjungan_detail_pasien.dart'; // Import model KunjunganDetailPasien
-
-// NEW: Import DiagnosaPage1
 import 'package:supaaaa/daftarPasien/diagnosisPage1.dart'; // Sesuaikan path ini
 
 class Daftarpasien extends StatefulWidget {

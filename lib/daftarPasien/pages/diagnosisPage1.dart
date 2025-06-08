@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Untuk memformat tanggal
+import 'package:intl/intl.dart';
 
-class DiagnosaPage1 extends StatefulWidget { // Ubah menjadi StatefulWidget karena ada TextField dan state
+import 'diagnosisPage2.dart';
+
+class DiagnosaPage1 extends StatefulWidget {
   final String namaPasien;
   final String keluhanPasien;
   final DateTime tanggalKunjungan;
@@ -29,9 +31,6 @@ class _DiagnosaPage1State extends State<DiagnosaPage1> {
   }
 
   void _masukkanObat() {
-    // Aksi saat tombol "Masukkan Obat" ditekan
-    // Anda bisa menyimpan diagnosis ke database di sini
-    // atau navigasi ke halaman untuk memilih obat
     print('Diagnosis: ${_diagnosisController.text}');
     print('Nama Pasien: ${widget.namaPasien}');
     print('Keluhan: ${widget.keluhanPasien}');
@@ -41,7 +40,7 @@ class _DiagnosaPage1State extends State<DiagnosaPage1> {
     }
 
     // Contoh: Navigasi ke halaman pemilihan obat
-    // Navigator.push(context, MaterialPageRoute(builder: (context) => PilihObatPage()));
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Diagnosispage2()));
     ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tombol "Masukkan Obat" ditekan!'))
     );
