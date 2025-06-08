@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supaaaa/models/rekam_medis_database.dart';
 
 class Diagnosispage2 extends StatefulWidget {
-  const Diagnosispage2({super.key});
+  final int? rekamMedisId;
+  const Diagnosispage2({super.key, required this.rekamMedisId});
 
   @override
   State<Diagnosispage2> createState() => _Diagnosispage2State();
@@ -11,31 +13,22 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
   final TextEditingController _jumlahObatDibutuhkanController =
   TextEditingController();
   int _numberOfMedicineFields = 0;
-
-  // This list will hold the selected medicine for each dropdown
-  List<String?> _selectedMedicines = [];
-  // This list will hold the quantity for each medicine input field
+  List<String?> _selectedMedicinesNames = [];
+  List<int?> _selectedMedicinesIds = [];
   List<TextEditingController> _jumlahObatControllers = [];
 
-  // Dummy list of medicines for the dropdown
-  final List<String> _medicineOptions = [
-    'Paracetamol',
-    'Amoxicillin',
-    'Ibuprofen',
-    'Vitamin C',
-    'Antacid',
-  ];
+  final RekamMedisDatabase _rekamMedisDatabase = RekamMedisDatabase();
+  List<Map<String, dynamic>> _medicineOptions = []; // Akan diisi dari database
 
   @override
   void initState() {
     super.initState();
-    // Add a listener to the controller to update medicine fields dynamically
+    _fetchMedicineOptions(); // Ambil daftar obat saat inisialisasi
     _jumlahObatDibutuhkanController.addListener(_updateMedicineFields);
   }
 
   @override
   void dispose() {
-    // Clean up controllers and listeners to prevent memory leaks
     _jumlahObatDibutuhkanController.removeListener(_updateMedicineFields);
     _jumlahObatDibutuhkanController.dispose();
     for (var controller in _jumlahObatControllers) {
@@ -44,53 +37,113 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
     super.dispose();
   }
 
+  // Fungsi untuk mengambil daftar obat dari database
+  Future<void> _fetchMedicineOptions() async {
+    try {
+      final List<Map<String, dynamic>> obatList = await _rekamMedisDatabase.getObatList();
+      setState(() {
+        _medicineOptions = obatList;
+      });
+      print('Daftar Obat berhasil dimuat: $_medicineOptions'); // Debugging: lihat isi daftar obat
+    } catch (e) {
+      print('Error fetching medicine options: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat daftar obat: ${e.toString()}'))
+      );
+    }
+  }
+
   // Method to update the number of dynamically generated medicine input fields
   void _updateMedicineFields() {
+    if (!mounted) return; // Pastikan widget masih mounted
+
     int? newCount = int.tryParse(_jumlahObatDibutuhkanController.text);
     if (newCount != null && newCount >= 0) {
-      // If a valid non-negative number is entered
       setState(() {
         _numberOfMedicineFields = newCount;
-        // Adjust the size of the selected medicines list based on the new count
-        while (_selectedMedicines.length < _numberOfMedicineFields) {
-          _selectedMedicines.add(null); // Add null for new dropdowns
+        // Sesuaikan ukuran daftar nama dan ID obat yang dipilih
+        while (_selectedMedicinesNames.length < _numberOfMedicineFields) {
+          _selectedMedicinesNames.add(null);
+          _selectedMedicinesIds.add(null); // Penting: tambahkan juga untuk ID
         }
-        while (_selectedMedicines.length > _numberOfMedicineFields) {
-          _selectedMedicines.removeLast(); // Remove excess items
+        while (_selectedMedicinesNames.length > _numberOfMedicineFields) {
+          _selectedMedicinesNames.removeLast();
+          _selectedMedicinesIds.removeLast(); // Penting: hapus juga untuk ID
         }
 
-        // Adjust the size of the quantity controllers list based on the new count
+        // Sesuaikan ukuran daftar controller jumlah obat
         while (_jumlahObatControllers.length < _numberOfMedicineFields) {
-          _jumlahObatControllers.add(TextEditingController()); // Add new controllers
+          _jumlahObatControllers.add(TextEditingController());
         }
         while (_jumlahObatControllers.length > _numberOfMedicineFields) {
-          _jumlahObatControllers.last.dispose(); // Dispose and remove excess controllers
+          _jumlahObatControllers.last.dispose();
           _jumlahObatControllers.removeLast();
         }
       });
     } else if (_jumlahObatDibutuhkanController.text.isEmpty) {
-      // If the input field is empty, reset the fields
       setState(() {
         _numberOfMedicineFields = 0;
-        _selectedMedicines.clear(); // Clear selected medicines
+        _selectedMedicinesNames.clear();
+        _selectedMedicinesIds.clear(); // Clear the IDs list too
         for (var controller in _jumlahObatControllers) {
-          controller.dispose(); // Dispose all current controllers
+          controller.dispose();
         }
-        _jumlahObatControllers.clear(); // Clear the list of controllers
+        _jumlahObatControllers.clear();
       });
     }
   }
 
   // Method to handle saving the entered data
-  void _saveData() {
-    print('Number of medicines needed: $_numberOfMedicineFields');
-    for (int i = 0; i < _numberOfMedicineFields; i++) {
-      print('Medicine ${i + 1}:');
-      print('  Selected Medicine: ${_selectedMedicines[i] ?? "Not selected"}');
-      print('  Quantity: ${_jumlahObatControllers[i].text}');
+  void _saveData() async {
+    if (_numberOfMedicineFields == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Jumlah obat yang dibutuhkan harus diisi!'))
+      );
+      return;
     }
-    // TODO: Implement your actual save logic here, e.g., send data to a backend or local storage
-    // You might want to add validation before saving.
+
+    List<Map<String, dynamic>> obatToSave = [];
+    for (int i = 0; i < _numberOfMedicineFields; i++) {
+      if (_selectedMedicinesIds[i] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Obat ke-${i + 1} belum dipilih!'))
+        );
+        return;
+      }
+      int? jumlah = int.tryParse(_jumlahObatControllers[i].text);
+      if (jumlah == null || jumlah <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Jumlah obat ke-${i + 1} tidak valid!'))
+        );
+        return;
+      }
+      obatToSave.add({
+        'obat_id': _selectedMedicinesIds[i],
+        'jumlah_digunakan': jumlah,
+      });
+    }
+
+    try {
+      final bool success = await _rekamMedisDatabase.updateRekamMedisAndObatStok(
+        rekamMedisId: widget.rekamMedisId!,
+        selectedObatList: obatToSave,
+      );
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Data berhasil diperbarui'))
+        );
+        Navigator.popUntil(context, (route) => route.isFirst); // Kembali ke halaman paling awal
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Terjadi Kesalahan saat menyimpan data'))
+        );
+      }
+    } catch (e) {
+      print('Error saat menyimpan data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}'))
+      );
+    }
   }
 
   @override
@@ -100,7 +153,6 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () {
-            // Handle back button press: navigate back
             Navigator.of(context).pop();
           },
         ),
@@ -133,8 +185,8 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
                   const SizedBox(height: 20),
                   // Dynamically generated medicine input fields based on _numberOfMedicineFields
                   ListView.builder(
-                    shrinkWrap: true, // Allows ListView to take only required space
-                    physics: const NeverScrollableScrollPhysics(), // Disables ListView's own scrolling
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: _numberOfMedicineFields,
                     itemBuilder: (context, index) {
                       return Padding(
@@ -148,22 +200,27 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
                             ),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
-                              value: _selectedMedicines[index],
+                              value: _selectedMedicinesNames[index], // Gunakan _selectedMedicinesNames
                               hint: const Text('Pilih Obat'),
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(
                                     vertical: 5, horizontal: 10),
                               ),
-                              items: _medicineOptions.map((String medicine) {
+                              // Gunakan `_medicineOptions` yang diambil dari database
+                              items: _medicineOptions.map((Map<String, dynamic> medicine) {
                                 return DropdownMenuItem<String>(
-                                  value: medicine,
-                                  child: Text(medicine),
+                                  // Pastikan nama kolom di Supabase adalah 'nama_obat'
+                                  value: medicine['nama'] as String,
+                                  child: Text(medicine['nama'] as String),
                                 );
                               }).toList(),
                               onChanged: (String? newValue) {
                                 setState(() {
-                                  _selectedMedicines[index] = newValue;
+                                  _selectedMedicinesNames[index] = newValue;
+                                  // Temukan ID obat yang sesuai
+                                  _selectedMedicinesIds[index] = _medicineOptions
+                                      .firstWhere((element) => element['nama'] == newValue)['id'] as int?;
                                 });
                               },
                             ),
@@ -199,9 +256,7 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  _saveData(); // Call the save data method
-                },
+                onPressed: _saveData, // Langsung panggil _saveData
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.lightGreen, // Button color
                   shape: RoundedRectangleBorder(

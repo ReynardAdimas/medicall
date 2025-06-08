@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:supaaaa/models/rekam_medis_database.dart';
 
 import 'diagnosisPage2.dart';
 
@@ -30,20 +31,54 @@ class _DiagnosaPage1State extends State<DiagnosaPage1> {
     super.dispose();
   }
 
-  void _masukkanObat() {
-    print('Diagnosis: ${_diagnosisController.text}');
-    print('Nama Pasien: ${widget.namaPasien}');
-    print('Keluhan: ${widget.keluhanPasien}');
-    print('Tanggal Kunjungan: ${widget.tanggalKunjungan}');
-    if (widget.kunjunganId != null) {
-      print('ID Kunjungan: ${widget.kunjunganId}');
+  void _masukkanObat() async {
+    if(widget.kunjunganId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: Id Kunjungan Tidak Tersedia'))
+      );
+      return;
     }
 
-    // Contoh: Navigasi ke halaman pemilihan obat
-    Navigator.push(context, MaterialPageRoute(builder: (context) => Diagnosispage2()));
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tombol "Masukkan Obat" ditekan!'))
-    );
+    if(_diagnosisController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: Diagnosis Tidak Boleh Kosong'))
+      );
+      return;
+    }
+
+    try{
+      int? rekamMedisId;
+      rekamMedisId = await RekamMedisDatabase().getRekamMedisIdByKunjunganId(widget.kunjunganId!);
+      if(rekamMedisId!=null) {
+        print('Rekam Medis Sudah Ada');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Pasien Sudah Diperiksa'))
+        );
+
+      }else {
+        rekamMedisId = await RekamMedisDatabase().insertRekamMedis(
+          kunjunganId: widget.kunjunganId!,
+          namaPasien: widget.namaPasien,
+          keluhanPasien: widget.keluhanPasien,
+          tanggalKunjungan: widget.tanggalKunjungan,
+          diagnosis: _diagnosisController.text,
+        );
+        if (rekamMedisId != null) {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => Diagnosispage2(rekamMedisId: rekamMedisId,)));
+          print('Diagnosis berhasil disimpan dengan ID Rekam Medis baru: $rekamMedisId');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Terjadi Error saat Pemasukan Data Rekam Medis!'))
+          );
+          return;
+        }
+      }
+    } catch(e) {
+      print('Error saat menyimpan diagnosis: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}'))
+      );
+    }
   }
 
   @override
@@ -76,7 +111,7 @@ class _DiagnosaPage1State extends State<DiagnosaPage1> {
           children: [
             // Informasi Pasien
             Text(
-              'Pasien, ${widget.namaPasien}', // Menggunakan widget.namaPasien
+              'Pasien, ${widget.namaPasien}',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,

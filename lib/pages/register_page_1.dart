@@ -63,7 +63,7 @@ class _RegisterPage1State extends State<RegisterPage1> {
 
       });
       Navigator.pop(context);
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const DashboardPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const BerandaPasienScreen()));
 
     } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(

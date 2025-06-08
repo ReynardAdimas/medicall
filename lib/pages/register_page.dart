@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supaaaa/pages/login_page.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
 
 import '../auth/auth_services.dart';
 
@@ -27,27 +27,21 @@ class _RegisterPageState extends State<RegisterPage> {
     final email = _emailController.text;
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
-    final supabase = Supabase.instance.client;
 
 
     if(password != confirmPassword)
       {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password don;t match")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Password yang anda masukkan tidak sama")));
+        return;
       }
 
     try {
       await authService.signUpWithEmailPassword(email, password);
-      // final user = supabase.auth.currentUser;
-      // final pasienId = supabase.from('pasien').select('id');
-      // await supabase.from('pasien').update({
-      //   'user_id' : user?.id
-      // }).eq('id', pasienId);
-      // // pop register page
       Navigator.pop(context);
       Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage()));
 
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Terjadi error saat pembuatan akun anda")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password harus terdiri dari 6 karakter dan harus mengandung huruf kecil, huruf besar, digit angka dan simbol")));
     }
   }
 

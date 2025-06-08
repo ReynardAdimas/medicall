@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supaaaa/auth/auth_services.dart';
-import 'package:supaaaa/daftarPasien/daftarPasien.dart';
+import 'package:supaaaa/daftarPasien/pages/daftarPasien.dart';
 import 'package:supaaaa/jadwalKunjungan/pages/jadwalKunjungan.dart';
 import 'package:supaaaa/obat/pages/obat_1.dart';
+import 'package:supaaaa/riwayatKunjungan/pages/riwayatKunjungan1.dart';
 
 
 class DashboardAdmin extends StatefulWidget {
@@ -95,7 +96,7 @@ class _DashboardAdminState extends State<DashboardAdmin> {
                         () {
                       // Aksi saat kartu diklik
                       print('Daftar Kunjungan Pasien clicked');
-                      // Navigator.push(context, MaterialPageRoute(builder: (context) => DaftarKunjunganPasienPage()));
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => Riwayatkunjungan1()));
                     },
                   ),
                   const SizedBox(height: 16),

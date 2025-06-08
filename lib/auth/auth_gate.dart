@@ -73,7 +73,7 @@ class _AuthGateState extends State<AuthGate> {
       if (nomerhp == null || nomerhp.toString().isEmpty) {
         _nextPage = const RegisterPage1();
       } else {
-        _nextPage = const DashboardPage();
+        _nextPage = const BerandaPasienScreen();
       }
       _checking = false;
     });

@@ -18,8 +18,8 @@ class _LoginPageState extends State<LoginPage> {
   // get auth service
   final authService = AuthService();
   final supabase = Supabase.instance.client;
-  // final user = Supabase.instance.client.auth.currentUser;
-  // final pasienId = user?.id;
+
+  bool _isLoading = false;
 
   // text controller
   final _emailController = TextEditingController();
@@ -35,6 +35,10 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       await authService.sendResetPasswordEmail(email);
       if(mounted) {
@@ -48,6 +52,10 @@ class _LoginPageState extends State<LoginPage> {
           SnackBar(content: Text('Error: $e'))
         );
       }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -56,21 +64,19 @@ class _LoginPageState extends State<LoginPage> {
     // prepare data
     final email = _emailController.text;
     final password = _passwordController.text;
-
-    // attempt login...
+    setState(() {
+      _isLoading = true;
+    });
     try{
-      // final user = supabase.auth.currentUser;
-      // final data = await supabase.from('pasien').select('id').eq('email', email).maybeSingle();
-      // final pasienId = data?['id'];
-      // await supabase.from('pasien').update({
-      //   'user_id' : user?.id
-      // }).eq('id', pasienId);
-      // // pop register page
       await authService.signInWithEmailPassword(email, password);
     } catch (e) {
       if(mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Email atau Password anda mungkin salah")));
       }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -136,19 +142,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 SizedBox(height: 8),
-                // TextField(
-                //   controller: _passwordController,
-                //   obscureText: true,
-                //   decoration: InputDecoration(
-                //     hintText: 'ketik disini',
-                //     border: OutlineInputBorder(
-                //       borderRadius: BorderRadius.circular(16.0),
-                //     ),
-                //     contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                //   ),
-                // ),
-                // const Text('Kata Sandi'),
-                // const SizedBox(height: 8),
                 _buildPasswordField(
                   'ketik disini',
                   _obscureConfirm,
@@ -181,7 +174,9 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 Align(
                   alignment: Alignment.center,
-                  child: TextButton(onPressed: lupaPassword, child: Text(
+                  child: TextButton(
+                      onPressed: _isLoading ? null : lupaPassword,
+                      child: Text(
                     'Lupa Password',
                     style: TextStyle(color: Colors.blue),
                   )),
@@ -194,14 +189,18 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: login,
+                    onPressed: _isLoading ? null : login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green[400],
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24.0),
                       ),
                     ),
-                    child: Text(
+                    child: _isLoading
+                            ? const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    )
+                           : Text(
                       'Masuk',
                       style: TextStyle(fontSize: 18, color: Colors.black),
                     ),
