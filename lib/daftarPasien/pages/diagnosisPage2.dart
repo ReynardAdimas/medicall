@@ -18,12 +18,14 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
   List<TextEditingController> _jumlahObatControllers = [];
 
   final RekamMedisDatabase _rekamMedisDatabase = RekamMedisDatabase();
-  List<Map<String, dynamic>> _medicineOptions = []; // Akan diisi dari database
+  // Akan diisi dengan daftar obat yang stoknya > 0
+  List<Map<String, dynamic>> _medicineOptions = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchMedicineOptions(); // Ambil daftar obat saat inisialisasi
+    // Ambil daftar obat yang stoknya > 0 saat inisialisasi
+    _fetchMedicineOptions();
     _jumlahObatDibutuhkanController.addListener(_updateMedicineFields);
   }
 
@@ -37,16 +39,25 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
     super.dispose();
   }
 
-  // Fungsi untuk mengambil daftar obat dari database
+  // Fungsi untuk mengambil dan memfilter daftar obat dari database
   Future<void> _fetchMedicineOptions() async {
     try {
-      final List<Map<String, dynamic>> obatList = await _rekamMedisDatabase.getObatList();
+      // 1. Ambil semua daftar obat dari database
+      final List<Map<String, dynamic>> allObatList = await _rekamMedisDatabase.getObatList();
+
+      // 2. Filter daftar obat: hanya sertakan yang stoknya lebih dari 0
+      final List<Map<String, dynamic>> filteredObatList = allObatList.where((medicine) {
+        // Pastikan kunci 'stok' ada dan nilainya adalah integer yang valid
+        // Jika 'stok' tidak ada atau bukan angka, anggap stoknya 0 atau kurang
+        return medicine.containsKey('stok') && (medicine['stok'] is int) && (medicine['stok'] > 0);
+      }).toList();
+
       setState(() {
-        _medicineOptions = obatList;
+        _medicineOptions = filteredObatList;
       });
-      print('Daftar Obat berhasil dimuat: $_medicineOptions'); // Debugging: lihat isi daftar obat
+      print('Daftar Obat (stok > 0) berhasil dimuat: $_medicineOptions');
     } catch (e) {
-      print('Error fetching medicine options: $e');
+      print('Error fetching filtered medicine options: $e');
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Gagal memuat daftar obat: ${e.toString()}'))
       );
@@ -55,20 +66,21 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
 
   // Method to update the number of dynamically generated medicine input fields
   void _updateMedicineFields() {
-    if (!mounted) return; // Pastikan widget masih mounted
+    if (!mounted) return;
 
     int? newCount = int.tryParse(_jumlahObatDibutuhkanController.text);
     if (newCount != null && newCount >= 0) {
       setState(() {
         _numberOfMedicineFields = newCount;
+
         // Sesuaikan ukuran daftar nama dan ID obat yang dipilih
         while (_selectedMedicinesNames.length < _numberOfMedicineFields) {
           _selectedMedicinesNames.add(null);
-          _selectedMedicinesIds.add(null); // Penting: tambahkan juga untuk ID
+          _selectedMedicinesIds.add(null);
         }
         while (_selectedMedicinesNames.length > _numberOfMedicineFields) {
           _selectedMedicinesNames.removeLast();
-          _selectedMedicinesIds.removeLast(); // Penting: hapus juga untuk ID
+          _selectedMedicinesIds.removeLast();
         }
 
         // Sesuaikan ukuran daftar controller jumlah obat
@@ -84,7 +96,7 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
       setState(() {
         _numberOfMedicineFields = 0;
         _selectedMedicinesNames.clear();
-        _selectedMedicinesIds.clear(); // Clear the IDs list too
+        _selectedMedicinesIds.clear();
         for (var controller in _jumlahObatControllers) {
           controller.dispose();
         }
@@ -117,6 +129,22 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
         );
         return;
       }
+
+      // Pastikan obat yang dipilih masih memiliki stok yang mencukupi
+      // Dapatkan data obat terbaru dari _medicineOptions
+      final selectedMedicineData = _medicineOptions.firstWhere(
+            (element) => element['id'] == _selectedMedicinesIds[i],
+        orElse: () => <String, dynamic>{'stok': 0}, // Fallback jika tidak ditemukan
+      );
+
+      final int currentStok = selectedMedicineData['stok'] as int? ?? 0;
+      if (jumlah > currentStok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Stok "${_selectedMedicinesNames[i]}" tidak mencukupi. Stok tersedia: $currentStok'))
+        );
+        return;
+      }
+
       obatToSave.add({
         'obat_id': _selectedMedicinesIds[i],
         'jumlah_digunakan': jumlah,
@@ -132,7 +160,7 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Data berhasil diperbarui'))
         );
-        Navigator.popUntil(context, (route) => route.isFirst); // Kembali ke halaman paling awal
+        Navigator.popUntil(context, (route) => route.isFirst);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Terjadi Kesalahan saat menyimpan data'))
@@ -200,25 +228,25 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
                             ),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
-                              value: _selectedMedicinesNames[index], // Gunakan _selectedMedicinesNames
+                              value: _selectedMedicinesNames[index],
                               hint: const Text('Pilih Obat'),
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(
                                     vertical: 5, horizontal: 10),
                               ),
-                              // Gunakan `_medicineOptions` yang diambil dari database
+                              // Gunakan `_medicineOptions` yang sudah difilter
                               items: _medicineOptions.map((Map<String, dynamic> medicine) {
                                 return DropdownMenuItem<String>(
-                                  // Pastikan nama kolom di Supabase adalah 'nama_obat'
+                                  // Asumsi nama kolom untuk nama obat adalah 'nama'
                                   value: medicine['nama'] as String,
-                                  child: Text(medicine['nama'] as String),
+                                  child: Text('${medicine['nama'] as String} (Stok: ${medicine['stok']})'),
                                 );
                               }).toList(),
                               onChanged: (String? newValue) {
                                 setState(() {
                                   _selectedMedicinesNames[index] = newValue;
-                                  // Temukan ID obat yang sesuai
+                                  // Temukan ID obat yang sesuai dari daftar yang difilter
                                   _selectedMedicinesIds[index] = _medicineOptions
                                       .firstWhere((element) => element['nama'] == newValue)['id'] as int?;
                                 });
@@ -256,9 +284,9 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _saveData, // Langsung panggil _saveData
+                onPressed: _saveData,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightGreen, // Button color
+                  backgroundColor: Colors.lightGreen,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -275,3 +303,4 @@ class _Diagnosispage2State extends State<Diagnosispage2> {
     );
   }
 }
+

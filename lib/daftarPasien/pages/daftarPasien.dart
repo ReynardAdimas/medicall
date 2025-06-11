@@ -15,15 +15,20 @@ class Daftarpasien extends StatefulWidget {
 class _DaftarpasienState extends State<Daftarpasien> {
   final TextEditingController _searchController = TextEditingController();
   final KunjunganDatabase _kunjunganDatabase = KunjunganDatabase(); // Inisialisasi database
-  late Future<List<KunjunganDetailPasien>> _acceptedKunjunganData; // Future untuk data kunjungan yang diterima
 
-  List<KunjunganDetailPasien> _allAcceptedKunjungan = []; // Untuk menyimpan semua data dari future
-  List<KunjunganDetailPasien> _filteredAcceptedKunjungan = []; // Untuk data yang sudah difilter
+  // Future untuk data kunjungan yang belum diperiksa
+  late Future<List<KunjunganDetailPasien>> _unexaminedKunjunganData;
+
+  // Untuk menyimpan semua data yang belum diperiksa dari future
+  List<KunjunganDetailPasien> _allUnexaminedKunjungan = [];
+  // Untuk data yang sudah difilter
+  List<KunjunganDetailPasien> _filteredUnexaminedKunjungan = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchAcceptedKunjungan(); // Panggil fungsi untuk mengambil data
+    // Panggil fungsi untuk mengambil data pasien yang belum diperiksa
+    _fetchUnexaminedKunjungan();
     _searchController.addListener(_filterPasien);
   }
 
@@ -34,10 +39,11 @@ class _DaftarpasienState extends State<Daftarpasien> {
     super.dispose();
   }
 
-  // Fungsi untuk mengambil data kunjungan dengan status_diterima = true
-  Future<void> _fetchAcceptedKunjungan() async {
+  // Fungsi untuk mengambil data kunjungan dengan status_diterima = true dan belum diperiksa
+  Future<void> _fetchUnexaminedKunjungan() async {
     setState(() {
-      _acceptedKunjunganData = _kunjunganDatabase.ambilKunjunganDiterima(); // Panggil fungsi baru dari database
+      // Panggil fungsi baru dari database untuk pasien yang belum diperiksa
+      _unexaminedKunjunganData = _kunjunganDatabase.ambilKunjunganBelumDiperiksa();
     });
   }
 
@@ -48,10 +54,10 @@ class _DaftarpasienState extends State<Daftarpasien> {
     String query = _searchController.text.toLowerCase();
     setState(() {
       if (query.isEmpty) {
-        _filteredAcceptedKunjungan = List.from(_allAcceptedKunjungan);
+        _filteredUnexaminedKunjungan = List.from(_allUnexaminedKunjungan);
       } else {
-        _filteredAcceptedKunjungan = _allAcceptedKunjungan.where((kunjungan) {
-          // PERBAIKAN: Gunakan operator ?. dan ?? '' untuk menangani nilai null
+        _filteredUnexaminedKunjungan = _allUnexaminedKunjungan.where((kunjungan) {
+          // Gunakan operator ?. dan ?? '' untuk menangani nilai null pada nama pasien atau keluhan
           return (kunjungan.namaPasien?.toLowerCase() ?? '').contains(query) ||
               (kunjungan.keluhan?.toLowerCase() ?? '').contains(query);
         }).toList();
@@ -73,11 +79,11 @@ class _DaftarpasienState extends State<Daftarpasien> {
           },
         ),
         title: const Text(
-          'Daftar Pasien',
+          'Daftar Pasien Belum Diperiksa', // Ubah judul AppBar
           style: TextStyle(
             color: Colors.black,
             fontSize: 17,
-            fontFamily: 'Montserrat', // Atau font lain yang Anda gunakan
+            fontFamily: 'Montserrat',
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -159,10 +165,10 @@ class _DaftarpasienState extends State<Daftarpasien> {
           ),
           const SizedBox(height: 8), // Spasi antara header dan daftar
 
-          // Daftar Pasien (sekarang menampilkan data kunjungan yang diterima)
+          // Daftar Pasien (sekarang menampilkan data kunjungan yang belum diperiksa)
           Expanded(
             child: FutureBuilder<List<KunjunganDetailPasien>>(
-              future: _acceptedKunjunganData,
+              future: _unexaminedKunjunganData, // Menggunakan future yang baru
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -174,16 +180,15 @@ class _DaftarpasienState extends State<Daftarpasien> {
                   });
                   return Center(child: Text('Gagal memuat data: ${snapshot.error}'));
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  _allAcceptedKunjungan = []; // Reset jika tidak ada data
-                  _filteredAcceptedKunjungan = [];
-                  return const Center(child: Text('Tidak ada pasien yang diterima.'));
+                  _allUnexaminedKunjungan = []; // Reset jika tidak ada data
+                  _filteredUnexaminedKunjungan = [];
+                  return const Center(child: Text('Tidak ada pasien yang belum diperiksa.')); // Ubah teks
                 } else {
-                  // Data berhasil dimuat, simpan ke _allAcceptedKunjungan
-                  // Hanya update _allAcceptedKunjungan jika data dari snapshot berbeda
-                  if (_allAcceptedKunjungan.length != snapshot.data!.length ||
-                      !_allAcceptedKunjungan.every((element) => snapshot.data!.contains(element))) {
-                    _allAcceptedKunjungan = snapshot.data!;
-                    // Lakukan filtering ulang setiap kali data stream berubah
+                  // Data berhasil dimuat, simpan ke _allUnexaminedKunjungan
+                  if (_allUnexaminedKunjungan.length != snapshot.data!.length ||
+                      !_allUnexaminedKunjungan.every((element) => snapshot.data!.contains(element))) {
+                    _allUnexaminedKunjungan = snapshot.data!;
+                    // Lakukan filtering ulang setiap kali data stream berubah (jika ada)
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       _filterPasien();
                     });
@@ -191,9 +196,9 @@ class _DaftarpasienState extends State<Daftarpasien> {
 
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    itemCount: _filteredAcceptedKunjungan.length,
+                    itemCount: _filteredUnexaminedKunjungan.length,
                     itemBuilder: (context, index) {
-                      final kunjungan = _filteredAcceptedKunjungan[index];
+                      final kunjungan = _filteredUnexaminedKunjungan[index];
                       // Format tanggal ke "Rabu, 16 April"
                       final DateFormat formatter = DateFormat('EEEE, dd MMMM', 'id_ID');
                       final String formattedDate = formatter.format(kunjungan.tanggalKunjungan);
@@ -202,7 +207,6 @@ class _DaftarpasienState extends State<Daftarpasien> {
                         children: [
                           InkWell(
                             onTap: () {
-                              // PERBAIKAN: Gunakan operator ?? untuk memastikan String non-nullable
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -223,7 +227,7 @@ class _DaftarpasienState extends State<Daftarpasien> {
                                   Expanded(
                                     flex: 2,
                                     child: Text(
-                                      kunjungan.namaPasien ?? 'Nama Tidak Tersedia', // PERBAIKAN: Gunakan operator ??
+                                      kunjungan.namaPasien ?? 'Nama Tidak Tersedia',
                                       textAlign: TextAlign.left,
                                       style: const TextStyle(fontSize: 14, color: Colors.black87),
                                       overflow: TextOverflow.ellipsis,
@@ -243,7 +247,7 @@ class _DaftarpasienState extends State<Daftarpasien> {
                                   Expanded(
                                     flex: 3,
                                     child: Text(
-                                      kunjungan.keluhan ?? 'Tidak ada keluhan', // PERBAIKAN: Gunakan operator ??
+                                      kunjungan.keluhan ?? 'Tidak ada keluhan',
                                       textAlign: TextAlign.right,
                                       style: const TextStyle(fontSize: 14, color: Colors.black87),
                                       overflow: TextOverflow.ellipsis,
@@ -254,7 +258,7 @@ class _DaftarpasienState extends State<Daftarpasien> {
                               ),
                             ),
                           ),
-                          if (index < _filteredAcceptedKunjungan.length - 1)
+                          if (index < _filteredUnexaminedKunjungan.length - 1)
                             const Divider(height: 1, color: Colors.grey),
                         ],
                       );
