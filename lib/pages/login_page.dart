@@ -26,38 +26,38 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
 
   // lupa password
-  void lupaPassword() async {
-    final email = _emailController.text;
-    if(email.isEmpty){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Mohon isikan email anda'))
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await authService.sendResetPasswordEmail(email);
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Password reset email sent'))
-        );
-      }
-    } catch (e) {
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'))
-        );
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
+  // void lupaPassword() async {
+  //   final email = _emailController.text;
+  //   if(email.isEmpty){
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Mohon isikan email anda'))
+  //     );
+  //     return;
+  //   }
+  //
+  //   setState(() {
+  //     _isLoading = true;
+  //   });
+  //
+  //   try {
+  //     await authService.sendResetPasswordEmail(email);
+  //     if(mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Password reset email sent'))
+  //       );
+  //     }
+  //   } catch (e) {
+  //     if(mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Error: $e'))
+  //       );
+  //     }
+  //   } finally {
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+  //   }
+  // }
 
   // login button pressed
   void login() async {
@@ -171,15 +171,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ],
-                ),
-                Align(
-                  alignment: Alignment.center,
-                  child: TextButton(
-                      onPressed: _isLoading ? null : lupaPassword,
-                      child: Text(
-                    'Lupa Password',
-                    style: TextStyle(color: Colors.blue),
-                  )),
                 ),
 
                 SizedBox(height: 32),

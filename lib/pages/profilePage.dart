@@ -7,7 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'cek_diagnosis.dart';
 import 'pengaturanPage.dart';
 import 'dashboard_page.dart';
-import 'edit_phone_number_screen.dart'; // Import halaman baru
+import 'edit_phone_number_screen.dart';
+import 'edit_profil.dart'; // Import halaman baru
 
 class ProfilSayaScreen extends StatefulWidget {
   const ProfilSayaScreen({super.key});
@@ -47,7 +48,40 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
     _beratBadanController.dispose();
     super.dispose();
   }
+  // ... (kode yang sudah ada)
 
+  Future<void> _navigateToEditField({
+    required String currentFieldValue,
+    required String fieldLabel,
+    required String columnName,
+    TextInputType keyboardType = TextInputType.text,
+  }) async {
+    if (_userUuid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID pengguna belum tersedia.')),
+      );
+      return;
+    }
+
+    final bool? isUpdated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileFieldScreen(
+          currentFieldValue: currentFieldValue,
+          fieldLabel: fieldLabel,
+          columnName: columnName,
+          userUuid: _userUuid!,
+          keyboardType: keyboardType,
+        ),
+      ),
+    );
+
+    if (isUpdated == true) {
+      _fetchUserData(); // Muat ulang data profil setelah perubahan
+    }
+  }
+
+// ... (sisa kode _ProfilSayaScreenState)
   Future<void> _loadLocalBodyData() async {
     final prefs = await SharedPreferences.getInstance();
     final double? savedTinggi = prefs.getDouble('tinggiBadan');
@@ -408,16 +442,9 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
               onTap: _navigateToEditPhoneNumber, // Panggil fungsi navigasi
             ),
             _buildProfileDetail(
-              label: 'Kata Sandi',
-              value: '*********',
-              onTap: () {
-                // Handle change password
-              },
-            ),
-            _buildProfileDetail(
               label: 'Umur',
               value: (_umur != null) ? '$_umur tahun' : 'Memuat...',
-              onTap: null,
+              onTap: () => _navigateToEditField(currentFieldValue: _umur?.toString() ?? '', fieldLabel: 'Umur', columnName: 'umur', keyboardType: TextInputType.number),
             ),
             _buildProfileDetail(
               label: 'Gender',
@@ -427,12 +454,12 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
             _buildProfileDetail(
               label: 'Pekerjaan',
               value: _pekerjaan ?? 'Memuat...',
-              onTap: null,
+              onTap: () => _navigateToEditField(currentFieldValue: _pekerjaan ?? '', fieldLabel: 'Pekerjaan', columnName: 'pekerjaan'),
             ),
             _buildProfileDetail(
               label: 'Alamat',
               value: _alamat ?? 'Memuat...',
-              onTap: null,
+              onTap: () => _navigateToEditField(currentFieldValue: _alamat ?? '', fieldLabel: 'Alamat', columnName: 'alamat'),
             ),
             _buildProfileDetail(
               label: 'Jadwal Kamu',

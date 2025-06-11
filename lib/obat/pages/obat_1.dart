@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supaaaa/obat/obat_database.dart';
-import 'package:supaaaa/obat/pages/obat_2.dart';
+import 'package:supaaaa/obat/obat.dart'; // Pastikan path ini benar
+import 'package:supaaaa/obat/obat_database.dart'; // Pastikan path ini benar
+import 'package:supaaaa/obat/pages/obat_2.dart'; // Pastikan path ini benar
 
 class Obat1 extends StatefulWidget {
   const Obat1({super.key});
@@ -12,8 +13,8 @@ class Obat1 extends StatefulWidget {
 class _Obat1State extends State<Obat1> {
   final ObatDatabase obatDatabase = ObatDatabase();
   final TextEditingController _searchController = TextEditingController();
-  List<dynamic> _allObats = [];
-  List<dynamic> _filteredObats = [];
+  List<Obat> _allObats = []; // Mengubah tipe menjadi List<Obat>
+  List<Obat> _filteredObats = []; // Mengubah tipe menjadi List<Obat>
 
   @override
   void initState() {
@@ -28,15 +29,18 @@ class _Obat1State extends State<Obat1> {
     super.dispose();
   }
 
+  // Fungsi ini sekarang hanya akan memfilter _allObats dan memperbarui _filteredObats.
+  // Panggilan setState() akan dilakukan di dalam fungsi ini.
   void _filterObat() {
-    // Pastikan widget masih mounted sebelum memanggil setState
-    if (!mounted) return;
+    if (!mounted) return; // Pastikan widget masih di tree
 
-    String query = _searchController.text.toLowerCase();
+    final String query = _searchController.text.toLowerCase();
     setState(() {
       if (query.isEmpty) {
+        // Jika query kosong, tampilkan semua obat dari _allObats
         _filteredObats = List.from(_allObats);
       } else {
+        // Filter obat berdasarkan query pencarian
         _filteredObats = _allObats.where((obat) {
           return obat.nama.toLowerCase().contains(query);
         }).toList();
@@ -134,8 +138,8 @@ class _Obat1State extends State<Obat1> {
 
           // Daftar Obat dari StreamBuilder
           Expanded(
-            child: StreamBuilder<List<dynamic>>(
-              stream: obatDatabase.stream,
+            child: StreamBuilder<List<Obat>>(
+              stream: obatDatabase.getObatStream(), // Menggunakan stream dari ObatDatabase
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -148,26 +152,55 @@ class _Obat1State extends State<Obat1> {
                   );
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  // Jika tidak ada data, pastikan list filtering juga kosong
-                  _allObats = [];
-                  _filteredObats = [];
+                  // Jika tidak ada data, pastikan list lokal dikosongkan dan tampilkan pesan
+                  // Ini penting agar _allObats dan _filteredObats tidak menahan data lama.
+                  if (_allObats.isNotEmpty || _filteredObats.isNotEmpty) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if(mounted) {
+                        setState(() {
+                          _allObats = [];
+                          _filteredObats = [];
+                        });
+                      }
+                    });
+                  }
                   return const Center(
                     child: Text('Tidak ada data obat.'),
                   );
                 }
 
-                // Data loaded
-                // PENTING: Panggil _filterObat() setelah frame saat ini selesai dibangun
-                // Ini mencegah setState() dipanggil selama fase build
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  // Hanya update _allObats jika data dari snapshot berbeda
-                  // Ini untuk mencegah rebuild yang tidak perlu jika stream tidak berubah
-                  if (_allObats.length != snapshot.data!.length ||
-                      !_allObats.every((element) => snapshot.data!.contains(element))) {
-                    _allObats = snapshot.data!;
-                    _filterObat();
+                // Data sudah ada. Perbarui _allObats dan _filteredObats.
+                // Penting: Lakukan ini di luar setState() utama StreamBuilder
+                // dan panggil setState() hanya jika perubahan _allObats diperlukan
+                // untuk memicu _filterObat().
+                final List<Obat> newObats = snapshot.data!;
+
+                // Periksa apakah data stream benar-benar berubah konten
+                // Ini adalah perbandingan yang lebih baik daripada hanya perbandingan objek List.
+                bool dataChanged = _allObats.length != newObats.length;
+                if (!dataChanged) {
+                  for (int i = 0; i < _allObats.length; i++) {
+                    // Anda mungkin perlu ID atau properti unik lain untuk membandingkan objek Obat
+                    // Di sini saya asumsikan perbandingan nama dan stok sudah cukup sederhana
+                    if (_allObats[i].nama != newObats[i].nama || _allObats[i].stok != newObats[i].stok) {
+                      dataChanged = true;
+                      break;
+                    }
                   }
-                });
+                }
+
+                if (dataChanged) {
+                  // Gunakan addPostFrameCallback untuk memicu setState setelah build
+                  // agar _filterObat dapat di panggil dengan aman.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(() {
+                        _allObats = newObats; // Perbarui data master
+                        _filterObat(); // Terapkan filter ke data baru
+                      });
+                    }
+                  });
+                }
 
                 // list obat
                 return ListView.builder(
@@ -217,7 +250,17 @@ class _Obat1State extends State<Obat1> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const Obat2())),
+        onPressed: () async {
+          // Navigasi ke Obat2 dan tunggu hasilnya
+          // StreamBuilder akan otomatis menangani refresh data.
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const Obat2()),
+          );
+          // Tidak perlu memanggil setState() atau _filterObat() di sini lagi
+          // karena StreamBuilder akan mendeteksi perubahan dari Supabase stream.
+          // _filterObat() akan dipanggil secara otomatis di dalam StreamBuilder's builder.
+        },
         backgroundColor: Colors.green,
         child: const Icon(Icons.add, color: Colors.white, size: 30),
       ),

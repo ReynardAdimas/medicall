@@ -1,31 +1,97 @@
+// import 'package:supabase_flutter/supabase_flutter.dart';
+//
+// import 'obat.dart';
+//
+// class ObatDatabase {
+//   // Database --> obat
+//   final database = Supabase.instance.client.from('obat');
+//
+//   // Create
+//   Future createObat(Obat newObat) async {
+//     await database.insert(newObat.toMap());
+//   }
+//   // Read
+//   final stream = Supabase.instance.client.from('obat').stream(primaryKey: ['id']
+//   ).map((data) => data.map((obatMap) => Obat.fromMap(obatMap)).toList());
+//
+//   // Update
+//   Future updateObat(Obat oldObat, String newNama, int newStok) async {
+//     await database.update(
+//       {
+//         'nama' : newNama,
+//         'stok' : newStok
+//       }
+//     ).eq('id', oldObat.id!);
+//   }
+//
+//   // Delete
+//   Future deleteObat(Obat obat) async {
+//     await database.delete().eq('id', obat.id!);
+//   }
+// }
+// lib/obat/obat_database.dart
+// lib/obat/obat_database.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'obat.dart';
+import 'package:supaaaa/obat/obat.dart';
 
 class ObatDatabase {
-  // Database --> obat
-  final database = Supabase.instance.client.from('obat');
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Create
-  Future createObat(Obat newObat) async {
-    await database.insert(newObat.toMap());
+  // Method to create a new medicine entry
+  Future<void> createObat(Obat obat) async {
+    try {
+      await _supabase.from('obat').insert(obat.toMap());
+    } catch (e) {
+      print('Error creating obat: $e');
+      rethrow;
+    }
   }
-  // Read
-  final stream = Supabase.instance.client.from('obat').stream(primaryKey: ['id']
-  ).map((data) => data.map((obatMap) => Obat.fromMap(obatMap)).toList());
 
-  // Update
-  Future updateObat(Obat oldObat, String newNama, int newStok) async {
-    await database.update(
-      {
-        'nama' : newNama,
-        'stok' : newStok
+  // Method to update an existing medicine entry by its ID
+  Future<void> updateObat(int id, Map<String, dynamic> fieldsToUpdate) async {
+    try {
+      await _supabase.from('obat').update(fieldsToUpdate).eq('id', id);
+    } catch (e) {
+      print('Error updating obat: $e');
+      rethrow;
+    }
+  }
+
+  // Get a medicine by its name
+  Future<Obat?> getObatByName(String nama) async {
+    try {
+      final response = await _supabase
+          .from('obat')
+          .select()
+          .eq('nama', nama)
+          .maybeSingle(); // maybeSingle returns null if no record found, or a single map if found
+
+      if (response != null) {
+        return Obat.fromMap(response);
       }
-    ).eq('id', oldObat.id!);
+      return null;
+    } catch (e) {
+      print('Error getting obat by name: $e');
+      return null; // Return null if an error occurs or no obat found
+    }
   }
 
-  // Delete
-  Future deleteObat(Obat obat) async {
-    await database.delete().eq('id', obat.id!);
+  // Method to get all medicines for display (one-time fetch)
+  Future<List<Obat>> getAllObat() async {
+    try {
+      final response = await _supabase.from('obat').select().order('nama', ascending: true);
+      return (response as List).map((map) => Obat.fromMap(map as Map<String, dynamic>)).toList();
+    } catch (e) {
+      print('Error getting all obat: $e');
+      return [];
+    }
+  }
+
+  // NEW: Stream for real-time updates of all medicine entries
+  Stream<List<Obat>> getObatStream() {
+    // 'id' is used as primaryKey to enable real-time updates from Supabase
+    return _supabase.from('obat').stream(primaryKey: ['id']).order('nama', ascending: true).map((data) {
+      return data.map((map) => Obat.fromMap(map)).toList();
+    });
   }
 }
