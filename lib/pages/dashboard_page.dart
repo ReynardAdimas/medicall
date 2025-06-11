@@ -130,35 +130,35 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
                 mainAxisSpacing: 10,
                 children: [
                   _ServiceItem(
-                    icon: Icons.person_add_alt_1,
+                    imagePath: 'assets/pendaftaran.png',
                     label: 'Pendaftaran',
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const PendaftaranPages()));
                     },
                   ),
                   _ServiceItem(
-                    icon: Icons.monitor_weight,
+                    imagePath: 'assets/BMI.png',
                     label: 'Hitung BMI',
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const HitungBmi()));
                     },
                   ),
                   _ServiceItem(
-                    icon: Icons.vaccines,
+                    imagePath: 'assets/Imunisasi.png',
                     label: 'Imunisasi',
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const Imunisasi()));
                     },
                   ),
                    _ServiceItem(
-                    icon: Icons.calendar_month,
+                    imagePath: 'assets/kalenderKehamilan.png',
                     label: 'Kalender Kehamilan',
                     onTap: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const HitungHpl()));
                     },
                   ),
                   _ServiceItem(
-                    icon: Icons.crisis_alert,
+                    imagePath: 'assets/layananDarurat.png',
                     label: 'Layanan Darurat',
                     onTap: () {
                       _launchWhatsApp();
@@ -266,13 +266,13 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
 }
 
 class _ServiceItem extends StatelessWidget {
-  final IconData icon;
+  final String imagePath;
   final String label;
   final VoidCallback onTap;
 
   const _ServiceItem({
     super.key,
-    required this.icon,
+    required this.imagePath,
     required this.label,
     required this.onTap,
   });
@@ -287,7 +287,12 @@ class _ServiceItem extends StatelessWidget {
           child: CircleAvatar(
             radius: 30,
             backgroundColor: Colors.green[100],
-            child: Icon(icon, color: Colors.green[700], size: 30),
+            child: Image.asset(
+              imagePath,
+              width: 30,
+              height: 30,
+
+            ),
           ),
         ),
         const SizedBox(height: 5),

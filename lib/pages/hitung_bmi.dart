@@ -68,7 +68,7 @@ class _HitungBmiState extends State<HitungBmi> {
                   child: _buildGenderCard(
                     context: context,
                     label: 'Laki-laki',
-                    imagePath: 'assets/male_avatar.png', // Replace with your male avatar image
+                    imagePath: 'assets/lakiLaki.png', // Replace with your male avatar image
                     isSelected: _selectedGender == 'Laki-laki',
                     onTap: () {
                       setState(() {
@@ -82,7 +82,7 @@ class _HitungBmiState extends State<HitungBmi> {
                   child: _buildGenderCard(
                     context: context,
                     label: 'Perempuan',
-                    imagePath: 'assets/female_avatar.png', // Replace with your female avatar image
+                    imagePath: 'assets/Perempuan.png', // Replace with your female avatar image
                     isSelected: _selectedGender == 'Perempuan',
                     onTap: () {
                       setState(() {
@@ -182,18 +182,23 @@ class _HitungBmiState extends State<HitungBmi> {
             children: [
               // Placeholder for image. Replace with actual Image.asset or NetworkImage
               // Example: Image.asset(imagePath, height: 60, width: 60),
-              Container(
+              // Container(
+              //   height: 60,
+              //   width: 60,
+              //   decoration: BoxDecoration(
+              //     shape: BoxShape.circle,
+              //     color: Colors.grey[200], // Placeholder background
+              //   ),
+              //   child: Icon(
+              //     label == 'Laki-laki' ? Icons.person : Icons.person_2,
+              //     size: 40,
+              //     color: Colors.grey[600],
+              //   ),
+              // ),
+              Image.asset(
+                imagePath,
                 height: 60,
                 width: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.grey[200], // Placeholder background
-                ),
-                child: Icon(
-                  label == 'Laki-laki' ? Icons.person : Icons.person_2,
-                  size: 40,
-                  color: Colors.grey[600],
-                ),
               ),
               const SizedBox(height: 10),
               Text(

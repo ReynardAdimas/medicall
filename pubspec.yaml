@@ -30,4 +30,13 @@ flutter:
     - assets/daftar-pasien-icon.png
     - assets/Email.png
     - assets/antrian.png
+    - assets/BMI.png
+    - assets/Imunisasi.png
+    - assets/kalenderKehamilan.png
+    - assets/lakiLaki.png
+    - assets/layananDarurat.png
+    - assets/MasaKehamilan.png
+    - assets/MasaSubur.png
+    - assets/pendaftaran.png
+    - assets/Perempuan.png
 
