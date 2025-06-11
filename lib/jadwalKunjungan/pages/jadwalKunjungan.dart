@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supaaaa/pendaftaranPasien/kunjungan_database.dart';
 import 'package:supaaaa/models/kunjungan_detail_pasien.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Pastikan ini diimport jika belum
 
 class Jadwalkunjungan extends StatefulWidget {
   const Jadwalkunjungan({super.key});
@@ -163,12 +164,20 @@ class KunjunganListItem extends StatelessWidget {
   const KunjunganListItem({super.key, required this.kunjungan, required this.onStatusChanged});
 
   Future<void> _updateKunjunganStatus(BuildContext context, bool statusDiterima) async {
+    // Tentukan status_kunjungan berdasarkan statusDiterima
+    String newStatusKunjungan;
+    if (statusDiterima) {
+      newStatusKunjungan = 'done';
+    } else {
+      newStatusKunjungan = 'waiting'; // Jika dibatalkan atau ditolak, kembali ke waiting dengan status_diterima false
+    }
+
     try {
       await KunjunganDatabase().updateKunjungan(
           kunjungan.id,
           {
             'status_diterima': statusDiterima,
-            'status_kunjungan' : statusDiterima ? 'done' : 'waiting'
+            'status_kunjungan' : newStatusKunjungan, // Perbarui status_kunjungan juga
           });
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Kunjungan ${statusDiterima? 'diterima' : 'ditolak'}!'))
@@ -184,6 +193,7 @@ class KunjunganListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Tambahkan 'id_ID' untuk format tanggal agar nama hari/bulan dalam Bahasa Indonesia
     final DateFormat formatter = DateFormat('EEEE, dd MMMM', 'id_ID');
     final String formattedDate = formatter.format(kunjungan.tanggalKunjungan);
 
@@ -206,7 +216,7 @@ class KunjunganListItem extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              kunjungan.namaPasien ?? 'Nama Tidak Tersedia', // <-- Gunakan operator ??
+              kunjungan.namaPasien, // Menggunakan namaPasien dari model
               textAlign: TextAlign.left,
               style: const TextStyle(
                 color: Colors.black,
@@ -240,14 +250,14 @@ class KunjunganListItem extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.check_circle, color: Colors.green, size: 20),
-                  onPressed: () => _updateKunjunganStatus(context, true),
+                  onPressed: () => _updateKunjunganStatus(context, true), // Set status_diterima true
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
                 //const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.cancel, color: Colors.red, size: 20),
-                  onPressed: () => _updateKunjunganStatus(context, false),
+                  onPressed: () => _updateKunjunganStatus(context, false), // Set status_diterima false
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),

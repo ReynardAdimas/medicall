@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:supaaaa/auth/auth_services.dart';
 import 'package:supaaaa/pages/login_page.dart';
 import 'package:supaaaa/pages/profilePage.dart';
-import 'dashboard_page.dart';
+import 'package:supaaaa/pages/tentang_aplikasi.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase
+import 'dashboard_page.dart'; // Asumsikan ini adalah BerandaPasienScreen
 
 class PengaturanScreen extends StatefulWidget {
   const PengaturanScreen({super.key});
@@ -14,10 +16,8 @@ class PengaturanScreen extends StatefulWidget {
 class _PengaturanScreenState extends State<PengaturanScreen> {
   int _selectedIndex = 2;
 
-  final authService = AuthService();
-  void logout() async {
-    await authService.signOut();
-  }
+  final AuthService _authService = AuthService(); // Gunakan _authService yang sudah ada
+  final SupabaseClient _supabase = Supabase.instance.client; // Dapatkan instance Supabase client
 
   void _onItemTapped(int index) {
     setState(() {
@@ -40,6 +40,37 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
       // Sudah di Pengaturan, tidak perlu navigasi
     }
   }
+
+  // Fungsi untuk menampilkan dialog konfirmasi logout
+  Future<bool?> _showLogoutConfirmationDialog(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Keluar'),
+          content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Keluar', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Fungsi untuk menghapus akun pengguna telah dihapus karena alasan keamanan dan rekomendasi.
+  // Jika diperlukan di masa mendatang, implementasikan ini di sisi server (Supabase Edge Function)
+  // untuk keamanan Service Role Key.
 
   @override
   Widget build(BuildContext context) {
@@ -67,9 +98,7 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             icon: Icons.info_outline,
             label: 'Tentang Aplikasi',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Tentang Aplikasi tapped!')),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const TentangAplikasi()));
             },
           ),
           _buildSettingsItem(
@@ -78,22 +107,28 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
             onTap: () async {
               bool? confirmLogout = await _showLogoutConfirmationDialog(context);
               if(confirmLogout == true) {
-                logout();
+                await _authService.signOut(); // Menggunakan _authService
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Anda telah keluar'))
+                    const SnackBar(content: Text('Anda telah keluar'))
                 );
-                Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+                // Navigasi ke halaman login setelah logout
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                      (route) => false,
+                );
               }
             },
           ),
-          _buildSettingsItem(
-            icon: Icons.delete_outline,
-            label: 'Hapus Akun',
-            onTap: () {
-              _showDeleteAccountConfirmationDialog(context);
-            },
-            isDestructive: true,
-          ),
+          // Fitur "Hapus Akun" telah dihapus dari sini.
+          // _buildSettingsItem(
+          //   icon: Icons.delete_outline,
+          //   label: 'Hapus Akun',
+          //   onTap: () {
+          //     _showDeleteAccountConfirmationDialog(context);
+          //   },
+          //   isDestructive: true,
+          // ),
           const Spacer(),
         ],
       ),
@@ -143,61 +178,6 @@ class _PengaturanScreenState extends State<PengaturanScreen> {
           ),
         ),
       ),
-    );
-  }
-
-Future<bool?> _showLogoutConfirmationDialog(BuildContext context) async {
-  return showDialog<bool>( // Spesifikasikan tipe kembalian dialog
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Konfirmasi Keluar'),
-        content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(false); // Mengembalikan false jika batal
-            },
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(true); // Mengembalikan true jika keluar
-            },
-            child: const Text('Keluar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-  void _showDeleteAccountConfirmationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Konfirmasi Hapus Akun'),
-          content: const Text('Apakah Anda yakin ingin menghapus akun Anda secara permanen? Tindakan ini tidak dapat dibatalkan.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Akun Anda telah dihapus.')),
-                );
-              },
-              child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
     );
   }
 

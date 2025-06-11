@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:supaaaa/pages/hitung_bmi.dart';
+import 'package:supaaaa/pages/hitung_hpl.dart';
+import 'package:supaaaa/pages/imunisasi.dart';
 import 'package:supaaaa/pages/pengaturanPage.dart';
 import 'package:supaaaa/pages/profilePage.dart';
 import 'package:supaaaa/pendaftaranPasien/pages/pendaftaran_pages.dart';
+import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
 
-class BerandaPasienScreen extends StatefulWidget { // Ubah menjadi StatefulWidget
+class BerandaPasienScreen extends StatefulWidget {
   const BerandaPasienScreen({super.key});
 
   @override
@@ -35,6 +39,32 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
       );
     }
   }
+
+  // Fungsi untuk membuka chat WhatsApp
+  Future<void> _launchWhatsApp() async {
+    // Ganti dengan nomor telepon layanan darurat Anda (contoh: +6281234567890)
+    // Pastikan nomor diawali dengan kode negara tanpa tanda '+' di awal jika menggunakan skema 'wa.me'
+    // Untuk skema 'whatsapp://send', gunakan format +62...
+    const String phoneNumber = '+6289674215857'; // Contoh nomor WhatsApp
+    const String message = 'Halo, saya membutuhkan bantuan darurat medis.'; // Pesan yang bisa diisi otomatis
+
+    // Menggunakan wa.me untuk kompatibilitas yang lebih baik
+    final Uri whatsappUrl = Uri.parse('whatsapp://send?phone=$phoneNumber&text=${Uri.encodeComponent(message)}');
+
+    // Alternatif untuk wa.me jika ada masalah:
+    // final Uri whatsappUrl = Uri.parse('https://wa.me/$phoneNumber/?text=${Uri.encodeComponent(message)}');
+
+    if (await canLaunchUrl(whatsappUrl)) {
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication); // Buka di aplikasi eksternal (WhatsApp)
+    } else {
+      // Tampilkan SnackBar jika WhatsApp tidak bisa dibuka
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Tidak dapat membuka WhatsApp. Pastikan aplikasi terinstal.')),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -81,36 +111,28 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
                     icon: Icons.monitor_weight,
                     label: 'Hitung BMI',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Hitung BMI tapped!')),
-                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const HitungBmi()));
                     },
                   ),
                   _ServiceItem(
                     icon: Icons.vaccines,
                     label: 'Imunisasi',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Imunisasi tapped!')),
-                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const Imunisasi()));
                     },
                   ),
                   _ServiceItem(
                     icon: Icons.calendar_month,
                     label: 'Kalender Kehamilan',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Kalender Kehamilan tapped!')),
-                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const HitungHpl()));
                     },
                   ),
                   _ServiceItem(
                     icon: Icons.crisis_alert,
                     label: 'Layanan Darurat',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Layanan Darurat tapped!')),
-                      );
+                      _launchWhatsApp(); // Panggil fungsi untuk membuka WhatsApp
                     },
                   ),
                 ],
@@ -136,6 +158,9 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
                 return const _NewsCard();
               },
             ),
+            // Tingkatkan tinggi SizedBox untuk memastikan tidak ada overflow
+            // Ini akan memberikan padding ekstra di bagian bawah agar BottomNavigationBar tidak menutupi konten.
+            const SizedBox(height: 100), // Diperbesar dari 80 menjadi 100
           ],
         ),
       ),

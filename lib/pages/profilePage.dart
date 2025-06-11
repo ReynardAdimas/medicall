@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supaaaa/pages/cek_jadwal.dart';
 import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'cek_diagnosis.dart';
 import 'pengaturanPage.dart';
 import 'dashboard_page.dart';
+import 'edit_phone_number_screen.dart'; // Import halaman baru
 
-class ProfilSayaScreen extends StatefulWidget { // Ubah menjadi StatefulWidget
+class ProfilSayaScreen extends StatefulWidget {
   const ProfilSayaScreen({super.key});
 
   @override
@@ -13,7 +18,123 @@ class ProfilSayaScreen extends StatefulWidget { // Ubah menjadi StatefulWidget
 
 class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
   File? _image;
-  int _selectedIndex = 1; // Indeks untuk Profil
+  int _selectedIndex = 1;
+
+  String? _namaPasien;
+  String? _nomerHp;
+  int? _umur;
+  String? _gender;
+  String? _pekerjaan;
+  String? _alamat;
+  String? _userUuid;
+
+  final TextEditingController _tinggiBadanController = TextEditingController();
+  final TextEditingController _beratBadanController = TextEditingController();
+
+  String _bmiResult = '-';
+  bool _isEditingBodyData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+    _loadLocalBodyData();
+  }
+
+  @override
+  void dispose() {
+    _tinggiBadanController.dispose();
+    _beratBadanController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadLocalBodyData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final double? savedTinggi = prefs.getDouble('tinggiBadan');
+    final double? savedBerat = prefs.getDouble('beratBadan');
+
+    if (savedTinggi != null) {
+      _tinggiBadanController.text = savedTinggi.toStringAsFixed(0);
+    }
+    if (savedBerat != null) {
+      _beratBadanController.text = savedBerat.toStringAsFixed(0);
+    }
+    _calculateBMI();
+  }
+
+  Future<void> _saveLocalBodyData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final double? tinggi = double.tryParse(_tinggiBadanController.text);
+    final double? berat = double.tryParse(_beratBadanController.text);
+
+    if (tinggi != null) {
+      await prefs.setDouble('tinggiBadan', tinggi);
+    } else {
+      await prefs.remove('tinggiBadan');
+    }
+    if (berat != null) {
+      await prefs.setDouble('beratBadan', berat);
+    } else {
+      await prefs.remove('beratBadan');
+    }
+    _calculateBMI();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Tinggi dan Berat Badan tersimpan.')),
+    );
+  }
+
+  void _calculateBMI() {
+    final double? tinggi = double.tryParse(_tinggiBadanController.text);
+    final double? berat = double.tryParse(_beratBadanController.text);
+
+    if (tinggi != null && berat != null && tinggi > 0) {
+      final double tinggiMeter = tinggi / 100;
+      final double bmiValue = berat / (tinggiMeter * tinggiMeter);
+      setState(() {
+        _bmiResult = bmiValue.toStringAsFixed(2);
+      });
+    } else {
+      setState(() {
+        _bmiResult = '-';
+      });
+    }
+  }
+
+  Future<void> _fetchUserData() async {
+    final supabase = Supabase.instance.client;
+    final User? currentUser = supabase.auth.currentUser;
+
+    if (currentUser == null) {
+      print('Tidak ada pengguna yang login.');
+      return;
+    }
+
+    setState(() {
+      _userUuid = currentUser.id;
+    });
+
+    try {
+      final response = await supabase
+          .from('pasien')
+          .select('nama, nomerhp, umur, gender, pekerjaan, alamat')
+          .eq('user_id', currentUser.id)
+          .single();
+
+      setState(() {
+        _namaPasien = response['nama'] as String?;
+        _nomerHp = response['nomerhp'] as String?;
+        _umur = response['umur'] as int?;
+        _gender = response['gender'] as String?;
+        _pekerjaan = response['pekerjaan'] as String?;
+        _alamat = response['alamat'] as String?;
+      });
+    } catch (e) {
+      print('Error fetching user data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat data profil: ${e.toString()}')),
+      );
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -45,6 +166,40 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
       setState(() {
         _image = File(pickedFile.path);
       });
+      // Di sini Anda bisa menambahkan logika untuk mengupload gambar ke Supabase Storage
+      // dan menyimpan URL-nya di tabel pasien.
+    }
+  }
+
+  void _toggleEditBodyData() {
+    setState(() {
+      _isEditingBodyData = !_isEditingBodyData;
+    });
+    if (!_isEditingBodyData) {
+      _saveLocalBodyData();
+    }
+  }
+
+  Future<void> _navigateToEditPhoneNumber() async {
+    if (_nomerHp == null || _userUuid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data nomor ponsel atau ID pengguna belum tersedia.')),
+      );
+      return;
+    }
+
+    final bool? isUpdated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditPhoneNumberScreen(
+          currentPhoneNumber: _nomerHp!,
+          userUuid: _userUuid!,
+        ),
+      ),
+    );
+
+    if (isUpdated == true) {
+      _fetchUserData();
     }
   }
 
@@ -65,16 +220,18 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
         child: Column(
           children: [
             Container(
-              height: 150,
+              height: 250,
               color: Colors.green[700],
-              child: Center(
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Container(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    top: 60,
+                    left: 16,
+                    right: 16,
+                    child: Container(
                       width: double.infinity,
-                      margin: const EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 20),
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -90,10 +247,10 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const SizedBox(height: 40),
-                          const Text(
-                            'Andhika Kusuma Wardana',
-                            style: TextStyle(
+                          const SizedBox(height: 50),
+                          Text(
+                            _namaPasien ?? 'Memuat Nama...',
+                            style: const TextStyle(
                                 fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 5),
@@ -104,7 +261,31 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
                                 children: [
                                   const Text('Tinggi',
                                       style: TextStyle(color: Colors.grey)),
-                                  const Text('-', style: TextStyle(fontSize: 16)),
+                                  SizedBox(
+                                    width: 60,
+                                    child: TextField(
+                                      controller: _tinggiBadanController,
+                                      keyboardType: TextInputType.number,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      readOnly: !_isEditingBodyData,
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                        border: InputBorder.none,
+                                        hintText: '-',
+                                        enabledBorder: _isEditingBodyData ? const UnderlineInputBorder(
+                                          borderSide: BorderSide(color: Colors.grey),
+                                        ) : InputBorder.none,
+                                        focusedBorder: _isEditingBodyData ? const UnderlineInputBorder(
+                                          borderSide: BorderSide(color: Colors.green),
+                                        ) : InputBorder.none,
+                                      ),
+                                      onChanged: (value) {
+                                        _calculateBMI();
+                                      },
+                                    ),
+                                  ),
                                   const Text('Cm',
                                       style: TextStyle(
                                           fontSize: 12, color: Colors.grey)),
@@ -115,7 +296,31 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
                                 children: [
                                   const Text('Berat',
                                       style: TextStyle(color: Colors.grey)),
-                                  const Text('-', style: TextStyle(fontSize: 16)),
+                                  SizedBox(
+                                    width: 60,
+                                    child: TextField(
+                                      controller: _beratBadanController,
+                                      keyboardType: TextInputType.number,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      readOnly: !_isEditingBodyData,
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                        border: InputBorder.none,
+                                        hintText: '-',
+                                        enabledBorder: _isEditingBodyData ? const UnderlineInputBorder(
+                                          borderSide: BorderSide(color: Colors.grey),
+                                        ) : InputBorder.none,
+                                        focusedBorder: _isEditingBodyData ? const UnderlineInputBorder(
+                                          borderSide: BorderSide(color: Colors.green),
+                                        ) : InputBorder.none,
+                                      ),
+                                      onChanged: (value) {
+                                        _calculateBMI();
+                                      },
+                                    ),
+                                  ),
                                   const Text('Kg',
                                       style: TextStyle(
                                           fontSize: 12, color: Colors.grey)),
@@ -132,7 +337,7 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
                                           size: 14, color: Colors.grey),
                                     ],
                                   ),
-                                  const Text('-', style: TextStyle(fontSize: 16)),
+                                  Text(_bmiResult, style: const TextStyle(fontSize: 16)),
                                   const SizedBox(height: 12),
                                 ],
                               ),
@@ -141,66 +346,66 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
                         ],
                       ),
                     ),
-                    Positioned(
-                      top: 10,
-                      child: GestureDetector(
-                        onTap: _pickImage,
-                        child: Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.grey[200],
-                              backgroundImage: _image != null ? FileImage(_image!) : null,
-                              child: _image == null
-                                  ? Icon(
-                                Icons.person,
-                                size: 50,
+                  ),
+                  Positioned(
+                    top: 20,
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.grey[200],
+                            backgroundImage: _image != null ? FileImage(_image!) : null,
+                            child: _image == null
+                                ? Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Colors.grey[600],
+                            )
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.grey[300]!, width: 1),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(
+                                Icons.camera_alt,
+                                size: 18,
                                 color: Colors.grey[600],
-                              )
-                                  : null,
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.grey[300]!, width: 1),
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  size: 18,
-                                  color: Colors.grey[600],
-                                ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
-                    Positioned(
-                      top: 150,
-                      right: 40,
-                      child: IconButton(
-                        icon: Icon(Icons.edit, color: Colors.green[700]),
-                        onPressed: () {
-                          // Handle edit profile tap
-                        },
+                  ),
+                  Positioned(
+                    top: 180,
+                    right: 40,
+                    child: IconButton(
+                      icon: Icon(
+                        _isEditingBodyData ? Icons.save : Icons.edit,
+                        color: Colors.green[700],
                       ),
+                      onPressed: _toggleEditBodyData,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
+
             _buildProfileDetail(
               label: 'Nomer Ponsel',
-              value: '+6288923892877',
-              onTap: () {
-                // Handle change phone number
-              },
+              value: _nomerHp ?? 'Memuat...',
+              onTap: _navigateToEditPhoneNumber, // Panggil fungsi navigasi
             ),
             _buildProfileDetail(
               label: 'Kata Sandi',
@@ -210,11 +415,31 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
               },
             ),
             _buildProfileDetail(
+              label: 'Umur',
+              value: (_umur != null) ? '$_umur tahun' : 'Memuat...',
+              onTap: null,
+            ),
+            _buildProfileDetail(
+              label: 'Gender',
+              value: _gender ?? 'Memuat...',
+              onTap: null,
+            ),
+            _buildProfileDetail(
+              label: 'Pekerjaan',
+              value: _pekerjaan ?? 'Memuat...',
+              onTap: null,
+            ),
+            _buildProfileDetail(
+              label: 'Alamat',
+              value: _alamat ?? 'Memuat...',
+              onTap: null,
+            ),
+            _buildProfileDetail(
               label: 'Jadwal Kamu',
               value: 'Cek',
               isLink: true,
               onTap: () {
-                // Handle view schedule
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const CekJadwalScreen()));
               },
             ),
             _buildProfileDetail(
@@ -222,7 +447,7 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
               value: 'Cek',
               isLink: true,
               onTap: () {
-                // Handle view diagnosis
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const CekDiagnosis()));
               },
             ),
             const SizedBox(height: 20),
@@ -252,9 +477,12 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                value,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (onTap != null)
                 GestureDetector(
@@ -308,6 +536,7 @@ class _ProfilSayaScreenState extends State<ProfilSayaScreen> {
     );
   }
 
+  // Fixing the error in _buildNavBarItem
   Widget _buildNavBarItem({
     required IconData icon,
     required int index,
