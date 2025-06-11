@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supaaaa/auth/auth_gate.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:supaaaa/pages/splash_screen.dart'; // Import SplashScreen yang baru dibuat
 
 void main() async {
   await Supabase.initialize(
@@ -19,7 +20,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: AuthGate(),
+      home: SplashScreen(), // Set SplashScreen sebagai halaman awal aplikasi
     );
   }
 }

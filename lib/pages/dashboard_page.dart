@@ -5,7 +5,8 @@ import 'package:supaaaa/pages/imunisasi.dart';
 import 'package:supaaaa/pages/pengaturanPage.dart';
 import 'package:supaaaa/pages/profilePage.dart';
 import 'package:supaaaa/pendaftaranPasien/pages/pendaftaran_pages.dart';
-import 'package:url_launcher/url_launcher.dart'; // Import url_launcher
+import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Pastikan ini ada
 
 class BerandaPasienScreen extends StatefulWidget {
   const BerandaPasienScreen({super.key});
@@ -15,56 +16,84 @@ class BerandaPasienScreen extends StatefulWidget {
 }
 
 class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
-  int _selectedIndex = 0; // Indeks untuk Beranda
+  int _selectedIndex = 0;
+  String _userName = 'Pengguna'; // Variabel untuk menyimpan nama pengguna
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName(); // Panggil fungsi untuk memuat nama pengguna
+  }
+
+  // Fungsi untuk memuat nama pengguna dari tabel 'pasien' di Supabase
+  void _loadUserName() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      try {
+        // Query tabel 'pasien' berdasarkan user_id yang sedang login
+        final response = await Supabase.instance.client
+            .from('pasien')
+            .select('nama') // Pilih kolom 'nama' dari tabel pasien
+            .eq('user_id', user.id) // Filter berdasarkan user_id yang sedang login
+            .maybeSingle(); // Mengambil satu baris atau null jika tidak ditemukan
+
+        if (response != null && response['nama'] != null) {
+          setState(() {
+            _userName = response['nama'] as String;
+          });
+        } else {
+          // Jika tidak ada nama ditemukan di tabel pasien, bisa log atau berikan pesan
+          print('Nama tidak ditemukan di tabel pasien untuk user ID: ${user.id}');
+        }
+      } catch (e) {
+        print('Error fetching user name from pasien table: $e');
+        // Tampilkan SnackBar jika terjadi error (opsional)
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Gagal memuat nama pengguna: ${e.toString()}')),
+          );
+        }
+      }
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
 
-    // Handle navigasi berdasarkan index
     if (index == 0) {
       // Sudah di Beranda, tidak perlu navigasi
     } else if (index == 1) {
-      Navigator.pushAndRemoveUntil( // Gunakan pushAndRemoveUntil agar tidak menumpuk halaman
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const ProfilSayaScreen()),
-            (route) => false, // Hapus semua route sebelumnya
+            (route) => false,
       );
     } else if (index == 2) {
-      Navigator.pushAndRemoveUntil( // Gunakan pushAndRemoveUntil agar tidak menumpuk halaman
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const PengaturanScreen()),
-            (route) => false, // Hapus semua route sebelumnya
+            (route) => false,
       );
     }
   }
 
-  // Fungsi untuk membuka chat WhatsApp
   Future<void> _launchWhatsApp() async {
-    // Ganti dengan nomor telepon layanan darurat Anda (contoh: +6281234567890)
-    // Pastikan nomor diawali dengan kode negara tanpa tanda '+' di awal jika menggunakan skema 'wa.me'
-    // Untuk skema 'whatsapp://send', gunakan format +62...
-    const String phoneNumber = '+6289674215857'; // Contoh nomor WhatsApp
-    const String message = 'Halo, saya membutuhkan bantuan darurat medis.'; // Pesan yang bisa diisi otomatis
+    const String phoneNumber = '+6289674215857';
+    const String message = 'Halo, saya membutuhkan bantuan darurat medis.';
 
-    // Menggunakan wa.me untuk kompatibilitas yang lebih baik
     final Uri whatsappUrl = Uri.parse('whatsapp://send?phone=$phoneNumber&text=${Uri.encodeComponent(message)}');
 
-    // Alternatif untuk wa.me jika ada masalah:
-    // final Uri whatsappUrl = Uri.parse('https://wa.me/$phoneNumber/?text=${Uri.encodeComponent(message)}');
-
     if (await canLaunchUrl(whatsappUrl)) {
-      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication); // Buka di aplikasi eksternal (WhatsApp)
+      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
     } else {
-      // Tampilkan SnackBar jika WhatsApp tidak bisa dibuka
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Tidak dapat membuka WhatsApp. Pastikan aplikasi terinstal.')),
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +112,7 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Text(
-                'Hi, andhika',
+                'Hi, $_userName', // Menggunakan nama dari tabel pasien
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -121,7 +150,7 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const Imunisasi()));
                     },
                   ),
-                  _ServiceItem(
+                   _ServiceItem(
                     icon: Icons.calendar_month,
                     label: 'Kalender Kehamilan',
                     onTap: () {
@@ -132,7 +161,7 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
                     icon: Icons.crisis_alert,
                     label: 'Layanan Darurat',
                     onTap: () {
-                      _launchWhatsApp(); // Panggil fungsi untuk membuka WhatsApp
+                      _launchWhatsApp();
                     },
                   ),
                 ],
@@ -158,9 +187,7 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
                 return const _NewsCard();
               },
             ),
-            // Tingkatkan tinggi SizedBox untuk memastikan tidak ada overflow
-            // Ini akan memberikan padding ekstra di bagian bawah agar BottomNavigationBar tidak menutupi konten.
-            const SizedBox(height: 100), // Diperbesar dari 80 menjadi 100
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -213,7 +240,7 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
         width: 60,
         height: 60,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent, // Warna latar belakang sesuai seleksi
+          color: isSelected ? Colors.white : Colors.transparent,
           shape: BoxShape.circle,
           boxShadow: isSelected
               ? [
@@ -224,12 +251,12 @@ class _BerandaPasienScreenState extends State<BerandaPasienScreen> {
               offset: const Offset(0, 3),
             ),
           ]
-              : null, // Tidak ada shadow jika tidak terpilih
+              : null,
         ),
         child: Center(
           child: Icon(
             icon,
-            color: isSelected ? Colors.green[700] : Colors.white, // Warna ikon sesuai seleksi
+            color: isSelected ? Colors.green[700] : Colors.white,
             size: 30,
           ),
         ),

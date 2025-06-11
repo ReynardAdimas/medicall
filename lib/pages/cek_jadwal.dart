@@ -59,7 +59,7 @@ class _CekJadwalScreenState extends State<CekJadwalScreen> {
       } else if (_selectedFilter == 'Batal') {
         query = query
             .eq('status_diterima', false)
-            .eq('status_kunjungan', 'waiting');
+            .eq('status_kunjungan', 'rejected');
       }
 
       final List<Map<String, dynamic>> data = await query.order('tanggal_kunjungan', ascending: true); // Urutkan berdasarkan tanggal
@@ -356,7 +356,7 @@ class _CekJadwalScreenState extends State<CekJadwalScreen> {
           ),
         ),
       );
-    } else if (statusDiterima == false && statusKunjungan == 'waiting') { // Status: Batal
+    } else if (statusDiterima == false && statusKunjungan == 'rejected') { // Status: Batal
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton(

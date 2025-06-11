@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supaaaa/pages/check_email.dart';
 import 'package:supaaaa/pages/login_page.dart';
 
 
@@ -38,7 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
     try {
       await authService.signUpWithEmailPassword(email, password);
       Navigator.pop(context);
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const CheckEmailPage()));
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Password harus terdiri dari 6 karakter dan harus mengandung huruf kecil, huruf besar, digit angka dan simbol")));

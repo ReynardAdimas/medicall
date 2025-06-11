@@ -8,7 +8,7 @@ import 'cek_diagnosis.dart';
 import 'pengaturanPage.dart';
 import 'dashboard_page.dart';
 import 'edit_phone_number_screen.dart';
-import 'edit_profil.dart'; // Import halaman baru
+import 'edit_profil.dart';
 
 class ProfilSayaScreen extends StatefulWidget {
   const ProfilSayaScreen({super.key});
