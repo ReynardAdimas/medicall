@@ -1,6 +1,6 @@
 # MediCal
 
-MediCall adalah aplikasi mobile berbasis digital yang awalnya dirancang untuk memfasilitasi sebuah klinik kesehatan untuk membantu mengelola proses bisnis mulai dari pendaftaran pasien, arsip riwayat pasien, hingga pasien telah selesai diperiksa. Aplikasi ini juga menyediakan pengelolaan bagi inventaris obat yang tersedia di klinik. 
+MediCal adalah aplikasi mobile berbasis digital yang awalnya dirancang untuk memfasilitasi sebuah klinik kesehatan untuk membantu mengelola proses bisnis mulai dari pendaftaran pasien, arsip riwayat pasien, hingga pasien telah selesai diperiksa. Aplikasi ini juga menyediakan pengelolaan bagi inventaris obat yang tersedia di klinik. 
 
 
 ![Slide 16_9 - 1](https://github.com/user-attachments/assets/7aa3e9e4-40aa-47d4-963e-b84fda5b44ff)
