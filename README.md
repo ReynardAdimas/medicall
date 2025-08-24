@@ -5,7 +5,7 @@ MediCall adalah aplikasi mobile berbasis digital yang awalnya dirancang untuk me
 
 ![Slide 16_9 - 1](https://github.com/user-attachments/assets/7aa3e9e4-40aa-47d4-963e-b84fda5b44ff)
 
-## Daftar Isi
+# Daftar Isi
 
 - [Fitur Utama](#fitur-utama)
 - [Struktur Proyek](#struktur-proyek)
